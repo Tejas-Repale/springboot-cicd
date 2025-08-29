@@ -1,41 +1,34 @@
-name: "Spring Boot Deploy"
-
-description: "Build and deploy Spring Boot JAR to EC2"
+name: 'Spring Boot Deploy'
+description: 'Deploy Spring Boot JAR to EC2'
 
 inputs:
-  ec2_host:
-    description: "EC2 public IP or DNS"
+  ec2_key:
+    description: 'EC2 private key'
     required: true
   ec2_user:
-    description: "EC2 login user (ubuntu or ec2-user)"
+    description: 'EC2 user'
     required: true
-  ec2_key:
-    description: "Private SSH key (PEM file)"
+  ec2_host:
+    description: 'EC2 host'
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Save EC2 Key
+    - name: Write EC2 key
       shell: bash
       run: |
         echo "${{ inputs.ec2_key }}" > ec2-key.pem
-        # Fix formatting (replace \n with real line breaks)
-        sed -i 's/\\n/\n/g' ec2-key.pem
         chmod 600 ec2-key.pem
 
-    - name: Copy JAR to EC2
+    - name: Upload Spring Boot JAR to EC2
       shell: bash
       run: |
-        echo "Uploading Spring Boot JAR to EC2..."
-        scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar \
-        ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/app.jar
+        echo "Uploading Spring Boot JAR..."
+        scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/
 
-    - name: Run JAR on EC2
+    - name: Restart Spring Boot App
       shell: bash
       run: |
-        echo "Starting Spring Boot app on EC2..."
-        ssh -o StrictHostKeyChecking=no -i ec2-key.pem \
-        ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} \
-        "nohup java -jar /home/${{ inputs.ec2_user }}/app.jar > app.log 2>&1 &"
+        ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} "pkill -f 'java -jar' || true; nohup java -jar /home/${{ inputs.ec2_user }}/*.jar > app.log 2>&1 &"
 
