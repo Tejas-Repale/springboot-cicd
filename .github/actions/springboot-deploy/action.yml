@@ -15,11 +15,22 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Deploy Spring Boot JAR
+    - name: Save EC2 key
       shell: bash
       run: |
-        echo "${{ inputs.ec2_key }}" > ec2-key.pem
+        echo "${{ secrets.EC2_KEY }}" > ec2-key.pem
         chmod 600 ec2-key.pem
-        scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/app.jar
-        ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} "nohup java -jar app.jar > app.log 2>&1 &"
+
+    - name: Copy JAR to EC2
+      shell: bash
+      run: |
+        scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar \
+        ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/app.jar
+
+    - name: Run JAR on EC2
+      shell: bash
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} "
+          nohup java -jar /home/${{ inputs.ec2_user }}/app.jar > app.log 2>&1 &
+        "
 
