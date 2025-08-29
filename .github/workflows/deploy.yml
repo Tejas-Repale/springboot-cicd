@@ -1,4 +1,4 @@
-name: Deploy Spring Boot
+name: Spring Boot Deployment
 
 on:
   push:
@@ -6,19 +6,20 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Java 17
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build JAR
+      - name: Build Maven project
         run: mvn clean package -DskipTests
 
       - name: Deploy to EC2
@@ -26,5 +27,6 @@ jobs:
         with:
           ec2_host: ${{ secrets.EC2_HOST }}
           ec2_user: ${{ secrets.EC2_USER }}
-          ec2_key_b64: ${{ secrets.EC2_KEY_B64 }}
+          ec2_key: ${{ secrets.EC2_KEY }}
+          jar_file: target/*.jar
 

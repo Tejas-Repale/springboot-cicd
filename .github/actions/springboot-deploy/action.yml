@@ -1,35 +1,33 @@
-name: "Spring Boot Deploy"
-description: "Deploy Spring Boot JAR to EC2"
+name: "Spring Boot EC2 Deployment"
+description: "Deploy Maven Spring Boot app to AWS EC2"
 inputs:
   ec2_host:
-    description: "EC2 hostname or IP"
+    description: "EC2 public IP or DNS"
     required: true
   ec2_user:
-    description: "EC2 username"
+    description: "EC2 SSH username (default ec2-user or ubuntu)"
     required: true
-    default: ubuntu
-  ec2_key_b64:
-    description: "Base64-encoded EC2 private key"
+  ec2_key:
+    description: "EC2 private key (base64 encoded)"
+    required: true
+  jar_file:
+    description: "Path to the Spring Boot jar file"
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Write EC2 key
-      shell: bash
+    - name: Decode EC2 key
       run: |
-        echo "${{ inputs.ec2_key_b64 }}" | base64 --decode > ec2-key.pem
+        echo "${{ inputs.ec2_key }}" | base64 --decode > ec2-key.pem
         chmod 600 ec2-key.pem
 
-    - name: Upload Spring Boot JAR
-      shell: bash
+    - name: Copy JAR to EC2
       run: |
-        echo "Uploading JAR..."
-        scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/
+        scp -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.jar_file }} ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/app.jar
 
-    - name: Start Spring Boot
-      shell: bash
+    - name: Run JAR on EC2
       run: |
         ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} \
-        "pkill -f 'java -jar' || true; nohup java -jar /home/${{ inputs.ec2_user }}/*.jar > app.log 2>&1 &"
+        "pkill -f 'java -jar app.jar' || true && nohup java -jar /home/${{ inputs.ec2_user }}/app.jar > /home/${{ inputs.ec2_user }}/app.log 2>&1 &"
 
