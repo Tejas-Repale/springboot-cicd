@@ -21,13 +21,13 @@ runs:
         echo "${{ inputs.ec2_key_b64 }}" | base64 --decode > ec2-key.pem
         chmod 600 ec2-key.pem
 
-    - name: Upload Spring Boot JAR to EC2
+    - name: Upload Spring Boot JAR
       shell: bash
       run: |
         echo "Uploading JAR..."
         scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar ${{ inputs.ec2_user }}@${{ inputs.ec2_host }}:/home/${{ inputs.ec2_user }}/
 
-    - name: Start Spring Boot application
+    - name: Start Spring Boot
       shell: bash
       run: |
         ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ inputs.ec2_user }}@${{ inputs.ec2_host }} \
