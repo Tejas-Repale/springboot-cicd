@@ -1,15 +1,5 @@
-y
-name: Spring Boot Deploy
-description: "Build and deploy Spring Boot app to EC2 using systemd"
-
-inputs:
-  host:
-    required: true
-  username:
-    required: true
-  key:
-    required: true
-
+name: "Spring Boot Deploy"
+description: "Build and deploy Spring Boot app to EC2"
 runs:
   using: "composite"
   steps:
@@ -18,21 +8,13 @@ runs:
       shell: bash
 
     - name: Copy JAR to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ inputs.host }}
-        username: ${{ inputs.username }}
-        key: ${{ inputs.key }}
-        source: "target/demo-0.0.1-SNAPSHOT.jar"
-        target: "/home/ubuntu/demo-0.0.1-SNAPSHOT.jar"
+      run: |
+        scp -i ${{ secrets.EC2_KEY }} target/*.jar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/app.jar
+      shell: bash
 
-    - name: Restart systemd service
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ inputs.host }}
-        username: ${{ inputs.username }}
-        key: ${{ inputs.key }}
-        script: |
-          sudo systemctl stop myapp || true
-          sudo systemctl start myapp
-          sudo systemctl status myapp --no-pager
+    - name: Run Spring Boot app on EC2
+      run: |
+        ssh -i ${{ secrets.EC2_KEY }} ubuntu@${{ secrets.EC2_HOST }} \
+        "nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &"
+      shell: bash
+
