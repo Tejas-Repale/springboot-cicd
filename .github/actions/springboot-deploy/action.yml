@@ -1,15 +1,15 @@
 name: "Spring Boot Deploy"
-description: "Deploy Spring Boot app to EC2"
+description: "Deploys a Spring Boot JAR to EC2"
 
 inputs:
-  ec2_key:
-    description: "EC2 private key"
-    required: true
-  ec2_host:
-    description: "EC2 host address"
-    required: true
   ec2_user:
     description: "EC2 username"
+    required: true
+  ec2_host:
+    description: "EC2 public IP or DNS"
+    required: true
+  ec2_key:
+    description: "Private SSH key for EC2"
     required: true
 
 runs:
@@ -18,7 +18,7 @@ runs:
     - name: Save EC2 key
       shell: bash
       run: |
-        echo "${{ secrets.EC2_KEY }}" > ec2-key.pem
+        echo "${{ inputs.ec2_key }}" > ec2-key.pem
         chmod 600 ec2-key.pem
 
     - name: Copy JAR to EC2
